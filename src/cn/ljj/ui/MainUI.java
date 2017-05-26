@@ -34,7 +34,8 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 	private JTextArea resultDetailText;
 
 	public MainUI() {
-		this.setLayout(null);
+		setLayout(null);
+		setLocationRelativeTo(null);
 		// 搜索输入
 		JPanel searchInputPanel = new JPanel();
 		searchInputPanel.setBounds(0, 10, 750, 40);
