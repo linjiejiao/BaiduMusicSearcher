@@ -24,7 +24,7 @@ public class ProgressDialog extends JDialog {
 	private IProgressDialogCacnelListener listener;
 
 	public ProgressDialog(Frame owner) {
-		super(owner, true);
+		super(owner, false);
 		setLayout(null);
 		Rectangle parentBounds = owner.getBounds();
 		Rectangle bounds = new Rectangle();
@@ -84,7 +84,7 @@ public class ProgressDialog extends JDialog {
 		messageLabel.setText(message);
 	}
 
-	public void setProgres(int progress) {
+	public void setProgress(int progress) {
 		progressLabel.setText(progress + "%");
 		progressBar.setValue(progress);
 	}

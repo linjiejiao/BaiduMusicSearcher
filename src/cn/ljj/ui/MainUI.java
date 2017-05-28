@@ -4,6 +4,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -22,9 +25,14 @@ import cn.ljj.baidu.music.BaiduMusicInfo;
 import cn.ljj.baidu.music.BaiduMusicSearchResult;
 import cn.ljj.baidu.music.BaiduMusicSearcher;
 import cn.ljj.baidu.music.BaiduMusicSearcher.SearchCallback;
+import cn.ljj.common.HttpManager;
+import cn.ljj.common.HttpManager.DownloadCallback;
+import cn.ljj.common.HttpManager.HttpDownloadTask;
+import cn.ljj.ui.ProgressDialog.IProgressDialogCacnelListener;
 
 public class MainUI extends JFrame implements SearchCallback, ListSelectionListener {
 	private static final long serialVersionUID = 1L;
+	public static final String TAG = MainUI.class.getSimpleName();
 	private JTextField searchTextField;
 	private JButton searchButton;
 	private SearchResultListModel resultListModel;
@@ -32,6 +40,8 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 	private BaiduMusicSearcher searcher;
 	private ImagePanel singerImage;
 	private JTextArea resultDetailText;
+	private BaiduMusicInfo selectedMusic;
+	private ProgressDialog progressDialog = null;
 
 	public MainUI() {
 		setLayout(null);
@@ -77,17 +87,24 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 		detailPanel.add(resultPanel);
 		JPanel p = new JPanel();
 		JButton downloadButton = new JButton("下载");
-		p.setBounds(50, 370, 100, 40);
+		p.setBounds(50, 370, 100, 35);
 		p.add(downloadButton);
+		downloadButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				doDownloadMusicData(selectedMusic);
+			}
+		});
 		detailPanel.add(p);
 		add(detailPanel);
 		// 设置标题
-		this.setTitle("百度音乐搜索");
-		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setSize(750, 500);
-		this.setLocationRelativeTo(null);
-		this.setVisible(true);
-		this.setResizable(false);
+		setTitle("百度音乐搜索");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setSize(750, 500);
+		setLocationRelativeTo(null);
+		setVisible(true);
+		setResizable(false);
 
 		searcher = new BaiduMusicSearcher();
 		searcher.setCallBack(this);
@@ -121,6 +138,7 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 
 								@Override
 								public void actionPerformed(ActionEvent e) {
+									selectedMusic = music;
 									doFetchMusicDetails(music, rate);
 								}
 							});
@@ -161,6 +179,7 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 		}
 		BaiduMusicInfo music = resultListModel.getElementAt(resultList.getSelectedIndex());
 		if (!music.isDetailFetched) {
+			selectedMusic = music;
 			doFetchMusicDetails(music, null);
 		} else {
 			singerImage.setImageURL(music.songPicRadio);
@@ -169,16 +188,102 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 	}
 
 	public String getMusicString(BaiduMusicInfo music) {
-		return "title=" + music.title + "\nsongId=" + music.songId + "\nauthor=" + music.author + "\nartistId="
-				+ music.artistId + "\nallArtistId=" + music.allArtistId + "\nalbumTitle=" + music.albumTitle
-				+ "\nappendix=" + music.appendix + "\nalbumId=" + music.albumId + "\nlrcLink=" + music.lrcLink
-				+ "\nresourceType=" + music.resourceType + "\ncontent=" + music.content + "\nrelateStatus="
-				+ music.relateStatus + "\nhaveHigh=" + music.haveHigh + "\ncopyType=" + music.copyType + "\ndelStatus="
-				+ music.delStatus + "\nallRate=" + music.allRate + "\nhasMv=" + music.hasMv + "\nhasMvMobile="
-				+ music.hasMvMobile + "\nmvProvider=" + music.mvProvider + "\ncharge=" + music.charge + "\ntoneId="
-				+ music.toneId + "\ninfo=" + music.info + "\ndataSource=" + music.dataSource + "\nlearn=" + music.learn
-				+ "\nisDetailFetched=" + music.isDetailFetched + "\nsongPicSmall=" + music.songPicSmall
-				+ "\nsongPicBig=" + music.songPicBig + "\nsongPicRadio=" + music.songPicRadio + "\nsongLink="
-				+ music.songLink + "\nformat=" + music.format + "\nrate=" + music.rate + "\nsize=" + music.size;
+		return "title=" + music.title + "\nauthor=" + music.author + "\nalbumTitle=" + music.albumTitle + "\n\nlrcLink="
+				+ music.lrcLink + "\n\ncopyType=" + music.copyType + "\n\nallRate=" + music.allRate
+				+ "\n\nsongPicSmall=" + music.songPicSmall + "\n\nsongPicBig=" + music.songPicBig + "\n\nsongPicRadio="
+				+ music.songPicRadio + "\n\nsongLink=" + music.songLink + "\n\nformat=" + music.format + "\n\nrate="
+				+ music.rate + "\n\nsize=" + music.size;
+	}
+
+	private void doDownloadMusicData(BaiduMusicInfo music) {
+		File file = new File(music.author + " - " + music.title);
+		file.mkdirs();
+		String json = BaiduMusicInfo.toJson(music);
+		try {
+			File jsonFile = new File(file, music.title + ".json");
+			if (!jsonFile.exists()) {
+				jsonFile.createNewFile();
+			}
+			FileWriter fw = new FileWriter(jsonFile);
+			fw.write(json);
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (progressDialog == null) {
+			progressDialog = new ProgressDialog(this);
+		}
+		progressDialog.setVisible(true);
+		progressDialog.setMessage("正在下载封面");
+		progressDialog.setTitle("下载");
+		HttpDownloadTask picTask = new HttpDownloadTask(music.songPicRadio,
+				file.getAbsolutePath() + File.separator + music.title + ".jpg");
+		picTask.setCallBack(new DownloadCallback() {
+
+			@Override
+			public void onProgressChange(int length, int finished) {
+				progressDialog.setProgress(finished * 100 / length);
+			}
+
+			@Override
+			public void onFinished(String filePath) {
+				progressDialog.setMessage("正在下载歌词");
+			}
+
+			@Override
+			public void onFaild(int errorCode) {
+				progressDialog.setMessage("正在下载歌词");
+			}
+		});
+		HttpManager.getInstance().addTask(picTask);
+		HttpDownloadTask lrcTask = new HttpDownloadTask(music.lrcLink,
+				file.getAbsolutePath() + File.separator + music.title + ".lrc");
+		lrcTask.setCallBack(new DownloadCallback() {
+
+			@Override
+			public void onProgressChange(int length, int finished) {
+				progressDialog.setProgress(finished * 100 / length);
+			}
+
+			@Override
+			public void onFinished(String filePath) {
+				progressDialog.setMessage("正在下载mp3");
+			}
+
+			@Override
+			public void onFaild(int errorCode) {
+				progressDialog.setMessage("正在下载mp3");
+			}
+		});
+		HttpManager.getInstance().addTask(lrcTask);
+		HttpDownloadTask songTask = new HttpDownloadTask(music.songLink,
+				file.getAbsolutePath() + File.separator + music.title + "." + music.format);
+		songTask.setCallBack(new DownloadCallback() {
+
+			@Override
+			public void onProgressChange(int length, int finished) {
+				progressDialog.setProgress(finished * 100 / length);
+			}
+
+			@Override
+			public void onFinished(String filePath) {
+				progressDialog.setVisible(false);
+			}
+
+			@Override
+			public void onFaild(int errorCode) {
+				progressDialog.setVisible(false);
+			}
+		});
+		HttpManager.getInstance().addTask(songTask);
+		progressDialog.setCancelListener(new IProgressDialogCacnelListener() {
+
+			@Override
+			public void onCancel() {
+				songTask.cancel();
+				lrcTask.cancel();
+				picTask.cancel();
+			}
+		});
 	}
 }
