@@ -100,7 +100,7 @@ public class HttpManager implements Runnable {
 		}
 
 		private void onProgressChange(int length, int finished) {
-			Logger.d(TAG, "onProgressChange length:" + length + ", finished:" + finished);
+//			Logger.d(TAG, "onProgressChange length:" + length + ", finished:" + finished);
 			if(length < 0){
 				length = finished;
 			}

@@ -51,7 +51,7 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 		searchInputPanel.setBounds(0, 10, 750, 40);
 		searchTextField = new JTextField(50);
 		searchTextField.setBounds(0, 10, 600, 20);
-		searchTextField.setText("勇气");
+//		searchTextField.setText("勇气");
 		searchButton = new JButton("搜索");
 		searchButton.setBounds(0, 0, 40, 20);
 		searchButton.addActionListener(new ActionListener() {
@@ -102,7 +102,6 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 		setTitle("百度音乐搜索");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(750, 500);
-		setLocationRelativeTo(null);
 		setVisible(true);
 		setResizable(false);
 
@@ -154,7 +153,7 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 	}
 
 	private void doSearch() {
-		searcher.search(searchTextField.getText(), 20, 0);
+		searcher.search(searchTextField.getText(), 50, 0);
 	}
 
 	@Override
@@ -196,17 +195,16 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 	}
 
 	private void doDownloadMusicData(BaiduMusicInfo music) {
-		File file = new File(music.author + " - " + music.title);
+		File file = new File(music.getFolderName());
 		file.mkdirs();
 		String json = BaiduMusicInfo.toJson(music);
 		try {
-			File jsonFile = new File(file, music.title + ".json");
-			if (!jsonFile.exists()) {
-				jsonFile.createNewFile();
-			}
+			System.out.println(json);
+			File jsonFile = new File(file, music.getJsonFileName());
 			FileWriter fw = new FileWriter(jsonFile);
 			fw.write(json);
 			fw.close();
+			System.out.println(jsonFile.getAbsolutePath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

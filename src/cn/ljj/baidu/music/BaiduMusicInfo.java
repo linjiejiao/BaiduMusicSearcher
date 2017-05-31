@@ -150,6 +150,26 @@ public class BaiduMusicInfo {
 		fillLinks();
 	}
 
+	public String getFolderName() {
+		return author + " - " + title;
+	}
+
+	public String getLrcFileName() {
+		return title + ".lrc";
+	}
+
+	public String getMusicFileName() {
+		return title + "." + format;
+	}
+
+	public String getPictureFileName() {
+		return title + ".jpg";
+	}
+
+	public String getJsonFileName() {
+		return title + ".json";
+	}
+
 	private static String textRefix(String text) {
 		if (text.contains("<em>")) {
 			text = text.replace("<em>", "");
