@@ -51,7 +51,7 @@ public class MainUI extends JFrame implements SearchCallback, ListSelectionListe
 		searchInputPanel.setBounds(0, 10, 750, 40);
 		searchTextField = new JTextField(50);
 		searchTextField.setBounds(0, 10, 600, 20);
-//		searchTextField.setText("勇气");
+		// searchTextField.setText("勇气");
 		searchButton = new JButton("搜索");
 		searchButton.setBounds(0, 0, 40, 20);
 		searchButton.addActionListener(new ActionListener() {
